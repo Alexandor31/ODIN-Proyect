@@ -1,0 +1,24 @@
+# Jarvis Industrial - Dependencias
+# ⚠️  Si tu sistema es Debian/Ubuntu reciente y ves
+#     "externally-managed-environment", usa `setup.sh` o `setup.bat`,
+#     que crea un entorno virtual (NO uses --break-system-packages).
+
+fastapi>=0.110,<0.116
+uvicorn[standard]>=0.27,<0.30
+pydantic>=2.6,<3.0
+
+# Cliente Modbus TCP
+pymodbus>=3.5,<4.0
+
+# Utilidades HTTP (webhooks externos si los necesitas)
+requests>=2.31,<3.0
+httpx>=0.26,<0.29
+
+# Configuración por .env (opcional)
+python-dotenv>=1.0,<2.0
+
+# ---------------------------------------------------------------
+# Proveedores de IA opcionales (descomentar el que necesites):
+# ---------------------------------------------------------------
+# openai>=1.0
+# anthropic>=0.20

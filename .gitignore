@@ -1,0 +1,32 @@
+# Entorno virtual generado por setup.sh/setup.bat
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.pyc
+.pyo
+
+# Logs y temporales
+*.log
+logs/
+*.pid
+
+# Configuración local con secretos
+.env
+.env.local
+*.local.json
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Uploads
+uploads/
+data/raw/

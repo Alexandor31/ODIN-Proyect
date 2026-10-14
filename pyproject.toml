@@ -1,0 +1,27 @@
+[project]
+name = "jarvis-industrial"
+version = "1.0.0"
+description = "Puente web inteligente PLC (Modbus TCP) + asistente IA por voz"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110,<0.116",
+    "uvicorn[standard]>=0.27,<0.30",
+    "pydantic>=2.6,<3.0",
+    "pymodbus>=3.5,<4.0",
+    "requests>=2.31,<3.0",
+    "httpx>=0.26,<0.29",
+    "python-dotenv>=1.0,<2.0",
+]
+
+[project.scripts]
+jarvis = "main:app"
+
+[tool.jarvis]
+# Recomienda explícitamente la entrada del proyecto para evitar
+# el clásico error "can't open file .../main.py" cuando se ejecuta
+# desde una carpeta superior.
+entry = "main:app"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"

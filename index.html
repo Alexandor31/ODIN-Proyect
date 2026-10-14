@@ -1,0 +1,1615 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jarvis Industrial · Consola de Planta</title>
+
+  <!-- Tipografías industriales -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =========================================================== */
+    /*  Tokens de diseño - Estilo industrial oscuro                */
+    /* =========================================================== */
+    :root {
+      --bg-0: #070a10;
+      --bg-1: #0d1320;
+      --bg-2: #131a2a;
+      --bg-3: #1c2538;
+      --line: #233148;
+      --line-strong: #324560;
+
+      --text: #d8e3f3;
+      --text-dim: #8896ad;
+      --text-mute: #5b6a83;
+
+      --accent: #00e5ff;       /* cyan industrial */
+      --accent-2: #0091ff;
+      --accent-glow: 0 0 10px rgba(0, 229, 255, .55), 0 0 28px rgba(0, 145, 255, .35);
+
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --crit: #ff3860;
+      --crit-glow: 0 0 14px rgba(255, 56, 96, .55), 0 0 32px rgba(255, 56, 96, .35);
+
+      --radius: 10px;
+      --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+      --sans: 'Rajdhani', system-ui, sans-serif;
+    }
+
+    /* =========================================================== */
+    /*  Reset                                                      */
+    /* =========================================================== */
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: radial-gradient(1200px 700px at 70% -20%, #11203a 0%, var(--bg-0) 60%);
+      color: var(--text);
+      font-family: var(--sans);
+      letter-spacing: .2px;
+      overflow: hidden;
+    }
+
+    /* Patrón sutil de cuadrícula industrial */
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(50, 69, 96, .08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(50, 69, 96, .08) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =========================================================== */
+    /*  Layout                                                     */
+    /* =========================================================== */
+    .app {
+      position: relative; z-index: 1;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100vh;
+      padding: 18px 26px 14px 26px;
+      gap: 14px;
+    }
+
+    header.top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 18px;
+      background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .brand-logo {
+      width: 38px; height: 38px;
+      display: grid; place-items: center;
+      background: radial-gradient(circle at 30% 30%, var(--accent), var(--accent-2));
+      border-radius: 8px;
+      color: var(--bg-0);
+      font-weight: 800;
+      box-shadow: var(--accent-glow);
+      font-family: var(--mono);
+    }
+    .brand h1 {
+      font-size: 20px; margin: 0;
+      letter-spacing: 4px; text-transform: uppercase;
+    }
+    .brand h1 small {
+      display: block;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      font-size: 10px;
+      font-weight: 400;
+    }
+    .status-cluster {
+      display: flex; align-items: center; gap: 18px;
+    }
+    .pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 5px 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: var(--bg-3);
+    }
+    .pill .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 6px var(--ok);
+    }
+    .pill.warn .dot { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+    .pill.off .dot { background: var(--text-mute); box-shadow: none; }
+    .pill.crit .dot { background: var(--crit); box-shadow: 0 0 8px var(--crit); }
+
+    main.work {
+      display: grid;
+      grid-template-columns: 320px 1fr 320px;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex; flex-direction: column;
+      min-height: 0;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px 0;
+      font-size: 12px; letter-spacing: 4px; text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .panel h2::after {
+      content: ""; flex: 1;
+      height: 1px;
+      margin-left: 12px;
+      background: linear-gradient(90deg, var(--line-strong), transparent);
+    }
+
+    /* =========================================================== */
+    /*  Columna izquierda - PLCs                                    */
+    /* =========================================================== */
+    .plc-list {
+      display: flex; flex-direction: column; gap: 10px;
+      overflow-y: auto;
+    }
+    .plc-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--bg-3);
+      transition: border-color .2s ease, transform .2s ease;
+    }
+    .plc-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .plc-card h3 {
+      margin: 0; font-size: 14px;
+      font-family: var(--mono);
+      letter-spacing: 1px;
+      color: var(--text);
+    }
+    .plc-card .meta {
+      font-size: 11px; color: var(--text-dim);
+      font-family: var(--mono);
+      margin-top: 4px;
+    }
+    .plc-card .meta span { color: var(--accent); }
+
+    /* =========================================================== */
+    /*  Columna central                                             */
+    /* =========================================================== */
+    .center {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 14px;
+      min-height: 0;
+      /* SIEMPRE crece para llenar todo el alto disponible del panel.
+         Esto hace que el botón del mic se mantenga visualmente centrado
+         en el espacio libre, sin importar el estado del log debajo. */
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+    .mic-zone {
+      width: 100%;
+      flex: 0 0 auto;
+      display: flex; flex-direction: column; align-items: center;
+      position: relative;
+      min-height: 240px;
+      justify-content: center;
+      transition: flex-grow .35s ease, min-height .35s ease;
+    }
+    /* Cuando el log está colapsado a sólo el header, el área del micrófono
+       toma aún más espacio vertical. */
+    .center:has(.log-panel.log-header-only) .mic-zone {
+      flex: 1 1 auto;
+    }
+    .mic-button {
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      border: 2px solid var(--line-strong);
+      background: radial-gradient(circle at 35% 35%, #1a2742, #0a1020);
+      color: var(--accent);
+      cursor: pointer;
+      position: relative;
+      box-shadow:
+        0 0 0 4px rgba(0, 229, 255, .05),
+        inset 0 0 30px rgba(0, 145, 255, .15);
+      transition: transform .15s ease, box-shadow .2s ease;
+      display: grid; place-items: center;
+      font-family: var(--sans);
+      font-size: 12px; letter-spacing: 5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      position: relative;
+      z-index: 2;
+    }
+    .mic-button:hover { transform: scale(1.02); border-color: var(--accent); }
+    .mic-button.active {
+      border-color: var(--accent);
+      box-shadow: var(--accent-glow);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    .mic-button .label {
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    /* =========================================================== */
+    /*  Visualizador de audio como FONDO del área del micrófono.  */
+    /*  Cubre toda la zona del mic y refleja la "actividad" de     */
+    /*  voz (no la waveform real, porque Web Speech API no expone  */
+    /*  audio crudo). Reacciona a tres estados visuales:            */
+    /*    .voice-idle    -> oculto                                 */
+    /*    .voice-listening -> ondas concéntricas pulsando          */
+    /*    .voice-speaking  -> el botón emite ondas hacia afuera    */
+    /* =========================================================== */
+    .voice-stage {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 260px; height: 260px;
+      pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+    /* Anillos concéntricos (solo al escuchar) */
+    .voice-ring {
+      position: absolute;
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      opacity: 0;
+      transform: scale(.5);
+    }
+    .voice-ring.r1 { animation: voiceRing 2.2s ease-out infinite; }
+    .voice-ring.r2 { animation: voiceRing 2.2s ease-out infinite .55s; }
+    .voice-ring.r3 { animation: voiceRing 2.2s ease-out infinite 1.1s; }
+    @keyframes voiceRing {
+      0%   { opacity: .55; transform: scale(.45); }
+      90%  { opacity: 0;   transform: scale(1.15); }
+      100% { opacity: 0;   transform: scale(1.15); }
+    }
+    /* Barra de nivel en la base (12 segmentos que encienden al azar) */
+    .voice-bars {
+      display: flex; align-items: flex-end;
+      gap: 4px;
+      height: 70px;
+      margin-top: 110px;   /* empuja hacia abajo, debajo del botón */
+    }
+    .voice-bars span {
+      display: block;
+      width: 5px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 2px;
+      opacity: .25;
+      transform-origin: bottom center;
+      transition: opacity .15s ease;
+    }
+
+    /* Estados */
+    .voice-stage.is-idle       { display: none; }
+    .voice-stage.is-listening .voice-ring   { display: block; }
+    .voice-stage.is-listening .voice-bars   { display: flex; }
+    .voice-stage.is-speaking .voice-ring   { display: block; }
+    .voice-stage.is-speaking .voice-ring   { border-color: var(--ok); }
+    .voice-stage.is-speaking .voice-bars   { display: flex; }
+    .voice-stage.is-speaking .voice-bars span { background: var(--ok); }
+
+    /* Estado especial para el wake word: el botón "escucha" de forma
+       pasiva, no en push-to-talk. Anillos y barras a velocidad lenta
+       para distinguirse del visualizador "listening" del push. */
+    .voice-stage.is-wake {
+      display: flex;
+    }
+    .voice-stage.is-wake .voice-ring {
+      display: block;
+      border-color: var(--accent);
+      animation-duration: 3.4s;
+      opacity: .35;
+    }
+    .voice-stage.is-wake .voice-bars {
+      display: flex;
+      opacity: .55;
+    }
+    .voice-stage.is-wake .voice-bars span.live { animation-duration: 2.2s; }
+
+    /* Cuando wake está pendiente (wake detectado, esperando comando) */
+    .voice-stage.is-wake-active .voice-ring { border-color: var(--ok); opacity: .9; }
+    .voice-stage.is-wake-active .voice-bars span { background: var(--ok); }
+
+    /* Variación aleatoria en barras: con CSS sólo podemos usar nth-child.
+       Se enciende una distinta cada vez, no sincronizada, para sensación
+       de "actividad". Activamos niveles aleatorios por JS (ver más abajo). */
+    .voice-stage.is-listening .voice-bars span.live {
+      opacity: 1;
+      animation: barPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes barPulse {
+      0%, 100% { height: 6px; }
+      50%      { height: 38px; }
+    }
+
+    /* Pulso sutil del texto "HABLAR" mientras escucha / habla */
+    .mic-button.active .label .big,
+    .voice-stage.is-speaking ~ .mic-button .label .big {
+      animation: blinkSoft .9s ease-in-out infinite alternate;
+    }
+    @keyframes blinkSoft {
+      from { opacity: .55; letter-spacing: 6px; }
+      to   { opacity: 1;   letter-spacing: 8px; }
+    }
+    .mic-button .label .big {
+      display: block;
+      font-size: 16px;
+      letter-spacing: 6px;
+      color: var(--accent);
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, .45), inset 0 0 30px rgba(0, 145, 255, .15); }
+      50%      { box-shadow: 0 0 0 16px rgba(0, 229, 255, 0),  inset 0 0 30px rgba(0, 145, 255, .25); }
+    }
+    .listen-hint {
+      margin-top: 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-mute);
+      letter-spacing: 1px;
+    }
+    .search-row {
+      width: 100%;
+      display: flex; gap: 8px;
+    }
+    .search-row input {
+      flex: 1;
+      padding: 10px 14px;
+      background: var(--bg-3);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+    .search-row input:focus { outline: none; border-color: var(--accent); }
+    .search-row button {
+      padding: 0 16px;
+      background: var(--accent);
+      color: var(--bg-0);
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: var(--sans);
+    }
+    .search-row button:hover { background: #6bf2ff; }
+    .tts-toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      cursor: pointer;
+      user-select: none;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--bg-3);
+    }
+    .tts-toggle.on { color: var(--accent); border-color: var(--accent); }
+    .tts-toggle::before {
+      content: ""; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-mute);
+      box-shadow: 0 0 6px transparent;
+    }
+    .tts-toggle.on::before { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+    /* Log */
+    .log-panel {
+      /* Por defecto el log ocupa una porción del alto. Cuando está
+         colapsado a sólo header (.log-header-only) este alto se reduce
+         automáticamente al alto del header. */
+      flex: 1 1 40%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin-top: 14px;
+      transition: flex-basis .25s ease, min-height .25s ease;
+    }
+    .log-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+      flex: 0 0 auto;
+    }
+    .log-header-actions {
+      display: flex; gap: 6px;
+    }
+    .log-icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 28px;
+      background: var(--bg-3);
+      color: var(--text-dim);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all .15s ease;
+    }
+    .log-icon-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(0, 229, 255, .06);
+    }
+    .log-icon-btn:active { transform: translateY(1px); }
+
+    /* Cuando el log está "colapsado al header":
+       - el header SIGUE visible (con el botón de expandir)
+       - el cuerpo del log y el handle se ocultan */
+    .log-panel.log-header-only .log,
+    .log-panel.log-header-only .log-resize-handle { display: none; }
+    .log-panel.log-header-only { flex: 0 0 auto; }
+
+    /* El handle de drag vertical, pegado al borde inferior del log */
+    .log-resize-handle {
+      flex: 0 0 6px;
+      cursor: ns-resize;
+      background: transparent;
+      border-top: 1px solid var(--line);
+      margin-top: 4px;
+      position: relative;
+    }
+    .log-resize-handle::after {
+      content: "";
+      position: absolute;
+      left: 50%; top: 1px;
+      transform: translateX(-50%);
+      width: 36px; height: 3px;
+      background: var(--line-strong);
+      border-radius: 3px;
+      transition: background .15s ease;
+    }
+    .log-resize-handle:hover::after { background: var(--accent); }
+    .log {
+      flex: 1 1 auto;
+      min-height: 0;
+      /* Tope explícito: el log ocupa ~45% del alto de la ventana,
+         dejando el resto para el micrófono y la sección superior. */
+      max-height: 45vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px;
+      background: var(--bg-0);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      /* Firefox */
+      scrollbar-color: var(--line-strong) transparent;
+      scrollbar-width: thin;
+    }
+    .log-row {
+      display: grid; grid-template-columns: 64px 90px 1fr;
+      gap: 10px;
+      padding: 6px 8px;
+      border-bottom: 1px dashed rgba(50, 69, 96, .4);
+    }
+    .log-row:last-child { border-bottom: none; }
+    .log-row .ts  { color: var(--text-mute); }
+    .log-row .tag {
+      text-align: center;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+      border: 1px solid currentColor;
+      background: rgba(0, 229, 255, .05);
+      align-self: center;
+    }
+    .tag.user      { color: var(--accent); }
+    .tag.ia        { color: var(--ok);    }
+    .tag.alarma    { color: var(--crit); background: rgba(255, 56, 96, .08); animation: blink 1.4s infinite; }
+    .tag.sistema   { color: var(--text-dim); }
+    .tag.webhook   { color: var(--warn); }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .55; }
+    }
+    .log-row .msg { word-break: break-word; }
+
+    /* =========================================================== */
+    /*  Columna derecha - Alarmas                                   */
+    /* =========================================================== */
+    .alarms-list {
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .alarm {
+      padding: 10px 12px;
+      border-left: 3px solid var(--crit);
+      background: rgba(255, 56, 96, .08);
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      animation: slideIn .35s ease;
+    }
+    .alarm.media { border-color: var(--warn); background: rgba(251, 191, 36, .08); }
+    .alarm.alta  { border-color: var(--crit); background: rgba(255, 56, 96, .08); }
+    .alarm.critica {
+      border-color: var(--crit);
+      background: rgba(255, 56, 96, .15);
+      box-shadow: var(--crit-glow);
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(10px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .alarm .head {
+      display: flex; justify-content: space-between;
+      font-size: 10.5px; letter-spacing: 1px;
+      color: var(--text-dim);
+    }
+    .alarm .body { margin-top: 4px; color: var(--text); }
+
+    /* =========================================================== */
+    /*  Footer                                                     */
+    /* =========================================================== */
+    footer.bottom-bar {
+      padding: 10px 18px;
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+    }
+    footer .key {
+      color: var(--text-mute);
+    }
+    footer kbd {
+      background: var(--bg-3);
+      padding: 2px 7px;
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      color: var(--text);
+    }
+
+    /* Scrollbar industrial */
+    ::-webkit-scrollbar { width: 12px; height: 12px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 6px;
+      border: 2px solid var(--bg-0);
+      opacity: .85;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: #6bf2ff; }
+    /* Firefox */
+    html { scrollbar-color: var(--accent) transparent; scrollbar-width: thin; }
+
+    /* Banner de error de voz */
+    .voice-error {
+      position: fixed;
+      top: 80px; left: 50%; transform: translateX(-50%);
+      background: var(--crit);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-family: var(--mono);
+      box-shadow: var(--crit-glow);
+      display: none;
+      z-index: 50;
+    }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      main.work { grid-template-columns: 1fr; grid-template-rows: auto auto auto; overflow-y: auto; }
+      html, body { overflow: auto; }
+      .app { height: auto; min-height: 100vh; }
+      .log { min-height: 240px; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Banner de error de voz -->
+  <div class="voice-error" id="voice-error">
+    🎙️ Tu navegador no soporta reconocimiento de voz. Usa la entrada de texto.
+  </div>
+
+  <div class="app">
+    <!-- ====================================================== -->
+    <!--  HEADER                                                 -->
+    <!-- ====================================================== -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="brand-logo">J</div>
+        <h1>
+          JARVIS INDUSTRIAL
+          <small>puente voz · plc · ia</small>
+        </h1>
+      </div>
+      <div class="status-cluster">
+        <div class="pill" id="conn-pill"><span class="dot"></span><span id="conn-text">CONECTANDO…</span></div>
+        <div class="pill" id="ws-pill"><span class="dot"></span><span id="ws-text">WS · — </span></div>
+        <div class="pill off" id="mic-pill"><span class="dot"></span><span>MIC · OFF</span></div>
+      </div>
+    </header>
+
+    <!-- ====================================================== -->
+    <!--  MAIN                                                   -->
+    <!-- ====================================================== -->
+    <main class="work">
+      <!-- IZQUIERDA: PLCs -->
+      <section class="panel">
+        <h2>PLCs en planta</h2>
+        <div class="plc-list" id="plc-list">
+          <div class="plc-card">
+            <h3>Sin datos…</h3>
+            <div class="meta">Esperando respuesta del servidor.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CENTRO: micrófono y log -->
+      <section class="panel">
+        <h2>
+          Consola operativa
+          <span class="tts-toggle" id="wake-toggle" title="Activa el wake word 'OK Jarvis' para usar el micro sin manos">WAKE · OFF</span>
+          <span class="tts-toggle on" id="tts-toggle">TTS · ON</span>
+        </h2>
+
+        <div class="center">
+          <div class="mic-zone">
+            <div class="voice-stage is-idle" id="voice-stage" aria-hidden="true">
+              <div class="voice-ring r1"></div>
+              <div class="voice-ring r2"></div>
+              <div class="voice-ring r3"></div>
+              <div class="voice-bars" id="voice-bars">
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <button class="mic-button" id="mic-button" title="Mantener pulsado para hablar">
+              <div class="label">
+                <span class="big">HABLAR</span>
+                con el PLC
+              </div>
+            </button>
+            <div class="listen-hint" id="listen-hint">
+              Pulsa el botón y formula tu pregunta en voz alta.
+            </div>
+          </div>
+
+          <div class="search-row">
+            <input id="text-input" type="text" placeholder="o escribe aquí tu consulta…" autocomplete="off" />
+            <button id="send-text">Enviar</button>
+          </div>
+        </div>
+
+        <div class="log-panel" id="log-panel">
+          <div class="log-header">
+            <h2 style="margin:0;">Registro en tiempo real</h2>
+            <div class="log-header-actions">
+              <button id="log-collapse" class="log-icon-btn" title="Colapsar el registro (libera espacio)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <button id="log-expand" class="log-icon-btn" title="Expandir el registro" style="display:none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="18 15 12 9 6 15"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="log" id="log"></div>
+          <div class="log-resize-handle" id="log-resize-handle" title="Arrastra para redimensionar"></div>
+        </div>
+      </section>
+
+      <!-- DERECHA: alarmas -->
+      <section class="panel">
+        <h2>
+          Alarmas activas
+          <span class="pill crit" id="alarm-counter" style="font-size:10px;">
+            <span class="dot"></span><span id="alarm-count-text">0</span>
+          </span>
+        </h2>
+        <div class="alarms-list" id="alarms-list">
+          <div style="color:var(--text-mute); font-family:var(--mono); font-size:12px;">
+            Sin alarmas activas.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ====================================================== -->
+    <!--  FOOTER                                                 -->
+    <!-- ====================================================== -->
+    <footer class="bottom-bar">
+      <div>
+        <span class="key">API</span> &nbsp; <kbd>POST /api/voice-query</kbd> &nbsp;·&nbsp;
+        <kbd>POST /api/webhook-receiver</kbd> &nbsp;·&nbsp; <kbd>WS /ws</kbd>
+      </div>
+      <div>
+        v1.0 · <span id="status-time">--:--:--</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    /* =========================================================== */
+    /*  JARVIS · Cliente Web                                      */
+    /* =========================================================== */
+
+    // Estado
+    const state = {
+      ws: null,
+      wsReconnectDelay: 2000,
+      recognition: null,
+      isListening: false,
+      voiceMode: 'off',    // 'off' | 'push' | 'wake'
+      // Wake word config
+      wakeWords: ['ok jarvis', 'oc jarvis', 'o jarvis', 'okay jarvis', 'okay jarbis', 'oiga jarvis'],
+      wakeActive: false,   // true cuando se acaba de detectar wake, esperando comando
+      wakeBuffer: '',      // buffer del comando en curso tras el wake
+      wakeTimer: null,     // timeout para volver a estado de "esperando wake"
+      // Dedupe: para no procesar el mismo wake word dos veces seguidas
+      lastWakeTs: 0,
+      ttsEnabled: true,
+      voice: null,
+      alarms: [],
+    };
+
+    // Elementos
+    const $ = id => document.getElementById(id);
+    const logEl      = $('log');
+    const plcList    = $('plc-list');
+    const alarmsList = $('alarms-list');
+    const alarmCount = $('alarm-count-text');
+    const textInput  = $('text-input');
+    const ttsToggle  = $('tts-toggle');
+    const micButton  = $('mic-button');
+    const micPill    = $('mic-pill');
+    const listenHint = $('listen-hint');
+    const connPill   = $('conn-pill');
+    const connText   = $('conn-text');
+    const wsPill     = $('ws-pill');
+    const wsText     = $('ws-text');
+    const statusTime = $('status-time');
+    const sendBtn    = $('send-text');
+    const voiceError = $('voice-error');
+
+    // ---------------------------------------------------------- //
+    //  Helpers                                                  //
+    // ---------------------------------------------------------- //
+    const nowTs = () => {
+      const d = new Date();
+      return [d.getHours(), d.getMinutes(), d.getSeconds()]
+        .map(n => String(n).padStart(2, '0')).join(':');
+    };
+
+    function appendLog(tag, msg, opts = {}) {
+      const row = document.createElement('div');
+      row.className = 'log-row';
+      row.innerHTML = `
+        <span class="ts">${nowTs()}</span>
+        <span class="tag ${tag}">${tag.toUpperCase()}</span>
+        <span class="msg"></span>
+      `;
+      const textNode = row.querySelector('.msg');
+      textNode.textContent = msg;
+      if (opts.html) textNode.innerHTML = msg;
+
+      logEl.appendChild(row);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    /* ---------------------------------------------------------- */
+    /*  Colapsar / expandir el panel de registro                  */
+    /*  IMPORTANTE: al colapsar, dejamos el HEADER visible con el */
+    /*  botón de "expandir" para que SIEMPRE haya forma de volver */
+    /*  a abrir el panel. El cambio de tamaño del panel mueve el */
+    /*  botón del mic automáticamente (flexbox + :has()).         */
+    /* ---------------------------------------------------------- */
+    function setLogCollapsed(collapsed) {
+      const panel = $('log-panel');
+      if (!panel) return;
+      panel.classList.toggle('log-header-only', collapsed);
+      const btnCollapse = $('log-collapse');
+      const btnExpand   = $('log-expand');
+      if (btnCollapse) btnCollapse.style.display = collapsed ? 'none'        : 'inline-flex';
+      if (btnExpand)   btnExpand.style.display   = collapsed ? 'inline-flex' : 'none';
+    }
+
+    const collapseBtn = $('log-collapse');
+    const expandBtn   = $('log-expand');
+    if (collapseBtn) collapseBtn.addEventListener('click', () => setLogCollapsed(true));
+    if (expandBtn)   expandBtn.addEventListener('click',   () => setLogCollapsed(false));
+
+    /* ---------------------------------------------------------- */
+    /*  Drag vertical del handle de resize del log                */
+    /*  El usuario arrastra el grip inferior; el log cambia de    */
+    /*  alto. Como el panel central es flex, el mic-zone ocupa el */
+    /*  espacio libre y el botón del mic se recentra solo.        */
+    /* ---------------------------------------------------------- */
+    (function setupLogResize() {
+      const handle = $('log-resize-handle');
+      const panel  = $('log-panel');
+      if (!handle || !panel) return;
+
+      let dragging = false;
+      let startY = 0;
+      let startBasis = 0;
+
+      function panelParent() { return panel.parentElement; } // el <section class="panel">
+
+      function onDown(e) {
+        dragging = true;
+        startY   = e.clientY ?? (e.touches && e.touches[0].clientY) ?? 0;
+        startBasis = panel.getBoundingClientRect().height;
+        document.body.style.cursor = 'ns-resize';
+        e.preventDefault();
+      }
+      function onMove(e) {
+        if (!dragging) return;
+        const y = e.clientY ?? (e.touches && e.touches[0].clientY) ?? 0;
+        // El handle está al sur del panel, así que subir el mouse
+        // (delta positivo = startY - y > 0) agranda el panel.
+        const delta = startY - y;
+        const newH  = startBasis + delta;
+
+        const parent = panelParent();
+        const maxAvail = parent ? parent.getBoundingClientRect().height - 100
+                                : window.innerHeight * 0.7;
+        const minH = 80;
+        const maxH = Math.max(minH + 40, maxAvail);
+        const clamped = Math.min(maxH, Math.max(minH, newH));
+        panel.style.flexBasis = `${clamped}px`;
+      }
+      function onUp() {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.cursor = '';
+      }
+
+      handle.addEventListener('mousedown', onDown);
+      handle.addEventListener('touchstart', onDown, { passive: false });
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchend', onUp);
+    })();
+
+    function setMicPill(state_) {
+      micPill.classList.remove('off', 'crit', 'warn');
+      if (state_ === 'on') {
+        micPill.classList.add('warn');
+        micPill.querySelector('span:last-child').textContent = 'MIC · ESCUCHANDO';
+      } else {
+        micPill.classList.add('off');
+        micPill.querySelector('span:last-child').textContent = 'MIC · OFF';
+      }
+    }
+
+    /* ---------------------------------------------------------- */
+    /*  Visualizador de voz (anillos + barras)                    */
+    /*  Estados:                                                  */
+    /*    'idle'       -> oculto                                  */
+    /*    'listening'  -> anillos y barras cian, animados         */
+    /*    'speaking'   -> anillos y barras verdes, animados       */
+    /* ---------------------------------------------------------- */
+    const voiceStage = $('voice-stage');
+    const voiceBars  = $('voice-bars');
+    let barsTimer    = null;
+
+    function setVoiceState(state_) {
+      if (!voiceStage) return;
+      voiceStage.classList.remove(
+        'is-idle', 'is-listening', 'is-speaking', 'is-wake', 'is-wake-active'
+      );
+      voiceStage.classList.add(`is-${state_}`);
+
+      // Cuando entramos en un estado "vivo", encendemos barras
+      // aleatorias cada ~120ms para sensación de actividad.
+      if (barsTimer) {
+        clearInterval(barsTimer);
+        barsTimer = null;
+      }
+      if (state_ === 'idle') return;
+
+      const bars = voiceBars ? voiceBars.querySelectorAll('span') : [];
+      bars.forEach(b => b.classList.remove('live'));
+
+      // En wake (pasivo) encendemos solo 2 barras lentas; en wake-active
+      // y en listening/speaking encendemos 3-5 barras rápido.
+      const isSlowWake = state_ === 'wake';
+      const n = isSlowWake ? 2 : 3 + Math.floor(Math.random() * 3);
+      const tickMs = isSlowWake ? 320 : 140;
+
+      barsTimer = setInterval(() => {
+        if (!bars.length) return;
+        const used = new Set();
+        while (used.size < n) used.add(Math.floor(Math.random() * bars.length));
+        bars.forEach((b, i) => b.classList.toggle('live', used.has(i)));
+      }, tickMs);
+    }
+
+    /* Cambia solo el estado visual de "wake escuchando" → "wake activo"
+       sin tocar el intervalo de barras. */
+    function setWakeVisual(phase /* 'passive' | 'active' */) {
+      // phase 'passive' = esperando wake (cyan suave)
+      // phase 'active'  = wake detectado, capturando comando (verde)
+      if (!voiceStage) return;
+      voiceStage.classList.remove('is-wake', 'is-wake-active');
+      voiceStage.classList.add(phase === 'active' ? 'is-wake-active' : 'is-wake');
+    }
+
+    // ---------------------------------------------------------- //
+    //  WebSocket                                                //
+    // ---------------------------------------------------------- //
+    function connectWS() {
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const url = `${proto}//${location.host}/ws`;
+      appendLog('sistema', `Conectando a ${url} …`);
+      const ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        state.ws = ws;
+        wsPill.classList.remove('off');
+        wsPill.classList.add('');
+        wsText.textContent = 'WS · ONLINE';
+        appendLog('sistema', 'Conexión WebSocket establecida ✅');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleServerMessage(data);
+        } catch (e) {
+          console.warn('Mensaje WS no es JSON', event.data);
+        }
+      };
+
+      ws.onclose = () => {
+        state.ws = null;
+        wsText.textContent = 'WS · OFFLINE';
+        wsPill.classList.add('off');
+        appendLog('sistema', 'WebSocket desconectado, reintentando…');
+        setTimeout(connectWS, state.wsReconnectDelay);
+      };
+
+      ws.onerror = (e) => {
+        console.warn('WS error', e);
+      };
+    }
+
+    function handleServerMessage(data) {
+      const tipo = data.tipo || data.tipo_evento;
+      switch (tipo) {
+        case 'sistema':
+          appendLog('sistema', data.mensaje || JSON.stringify(data));
+          break;
+
+        case 'alarma':
+          handleAlarm(data);
+          break;
+
+        case 'webhook':
+          appendLog('webhook', `${data.mensaje || ''}  ${data.origen ? '· ' + data.origen : ''}`);
+          if (state.ttsEnabled && data.mensaje) speak(data.mensaje, { priority: true });
+          break;
+
+        case 'evento':
+          if (data.subtipo === 'respuesta_ia') {
+            // ya se mostró al recibir la respuesta del REST
+          } else {
+            appendLog('sistema', `[evento:${data.subtipo}] ${JSON.stringify(data)}`);
+          }
+          break;
+
+        case 'ack':
+        default:
+          // echo, ignorar
+          break;
+      }
+    }
+
+    // ---------------------------------------------------------- //
+    //  Alarmas                                                  //
+    // ---------------------------------------------------------- //
+    function handleAlarm(alarm) {
+      // Mostrar en log
+      const tstamp = alarm.timestamp ? new Date(alarm.timestamp).toLocaleTimeString() : nowTs();
+      appendLog(
+        'alarma',
+        `${alarm.mensaje || alarm.nombre}  ·  PLC ${alarm.plc_id || ''}  ·  sev ${alarm.severidad || ''}`
+      );
+
+      // Insertar/actualizar panel de alarmas
+      const existIdx = state.alarms.findIndex(a => a.nombre === alarm.nombre && a.plc_id === alarm.plc_id);
+      const item = {
+        nombre: alarm.nombre,
+        mensaje: alarm.mensaje,
+        plc_id: alarm.plc_id,
+        severidad: alarm.severidad || 'media',
+        timestamp: alarm.timestamp || new Date().toISOString(),
+      };
+      if (existIdx >= 0) state.alarms[existIdx] = item;
+      else state.alarms.unshift(item);
+
+      if (state.alarms.length > 30) state.alarms.pop();
+
+      renderAlarms();
+
+      // Anunciar por voz
+      if (state.ttsEnabled) {
+        speak(`Alarma ${alarm.severidad || 'media'}: ${alarm.mensaje || alarm.nombre}`, { priority: true });
+      }
+    }
+
+    function renderAlarms() {
+      if (!state.alarms.length) {
+        alarmsList.innerHTML = `
+          <div style="color:var(--text-mute); font-family:var(--mono); font-size:12px;">
+            Sin alarmas activas.
+          </div>`;
+      } else {
+        alarmsList.innerHTML = state.alarms.map(a => `
+          <div class="alarm ${a.severidad}">
+            <div class="head">
+              <span>${a.plc_id || ''} · ${a.nombre || ''}</span>
+              <span>${new Date(a.timestamp).toLocaleTimeString()}</span>
+            </div>
+            <div class="body">${a.mensaje || ''}</div>
+          </div>
+        `).join('');
+      }
+      alarmCount.textContent = state.alarms.length;
+      // Si hay críticas, reflejarlo en cabecera
+      const hasCrit = state.alarms.some(a => a.severidad === 'critica');
+      if (hasCrit) {
+        connPill.classList.add('crit');
+        connPill.classList.remove('off', 'warn');
+        connText.textContent = 'SISTEMA · ALERTA';
+      }
+    }
+
+    // ---------------------------------------------------------- //
+    //  Web Speech API · STT                                     //
+    // ---------------------------------------------------------- //
+    /*  Wake word + SpeechRecognition                            */
+    /*  Mode 'push'  : click en el botón del mic → escucha 1 vez */
+    /*  Mode 'wake'  : escucha continua, detecta "ok jarvis"     */
+    /*                 y captura el siguiente comando.            */
+    // ---------------------------------------------------------- //
+
+    /* Normaliza una transcripción: minúsculas, sin acentos,
+       sin signos, colapsando espacios. Para matching de wake word. */
+    function normalizeText(s) {
+      return (s || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')   // quitar diacríticos
+        .replace(/[^a-z0-9\s]/g, ' ')      // solo letras/números/espacios
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    /* Detecta si una frase contiene uno de los wake words y devuelve
+       el texto que viene después del wake (o null si no hay wake). */
+    function extractWakeCommand(text) {
+      const norm = normalizeText(text);
+      for (const w of state.wakeWords) {
+        const wn = normalizeText(w);
+        // Buscamos el wake word como palabra/frase entera en el texto.
+        const re = new RegExp(`\\b${wn.replace(/\s+/g, '\\s+')}\\b[\\s,]*(.*)`);
+        const m = norm.match(re);
+        if (m) {
+          return {
+            wakeWord: wn,
+            command: (m[1] || '').trim(),
+            fullNorm: norm,
+          };
+        }
+      }
+      return null;
+    }
+
+    function armWakeWindow() {
+      state.wakeActive = true;
+      state.wakeBuffer = '';
+      if (state.wakeTimer) clearTimeout(state.wakeTimer);
+      state.wakeTimer = setTimeout(() => {
+        state.wakeActive = false;
+        state.wakeBuffer = '';
+        setWakeVisual('passive');
+        listenHint.textContent = '🎙️ Wake word activo. Decí "OK Jarvis".';
+      }, 6000);
+      // Cambia el visual del botón del mic: de "escuchando pasivo" a
+      // "capturando comando" (verde).
+      setWakeVisual('active');
+      listenHint.textContent = '🟢 Te escucho. ¿Qué necesitas?';
+    }
+
+    function initSpeechRecognition() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        voiceError.style.display = 'block';
+        setTimeout(() => voiceError.style.display = 'none', 6000);
+        return null;
+      }
+      const rec = new SR();
+      rec.lang = 'es-ES';
+      // continuous: false → una sola utterance, el modo push-to-talk.
+      // continuous: true  → escucha permanente, modo wake word.
+      // La propiedad continuous SOLO aplica al instanciar el objeto,
+      // así que setWakeMode() recrea el recognition al alternar.
+      rec.continuous = (state.voiceMode === 'wake');
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      let finalText = '';
+
+      rec.onstart = () => {
+        state.isListening = true;
+        if (state.voiceMode === 'wake') {
+          // El wake NO parpadea: visualizamos una sola vez al arrancar
+          // (lo hace setWakeMode). Los onstart/onend intermedios del
+          // navegador, en continuous mode, no deben alterar el visual.
+          listenHint.textContent = '🎙️ Wake word activo. Decí "OK Jarvis".';
+          setWakeVisual('passive');
+          return;
+        }
+        // Modo push-to-talk
+        micButton.classList.add('active');
+        setMicPill('on');
+        setVoiceState('listening');
+        listenHint.textContent = 'Escuchando… habla ahora.';
+        finalText = '';
+      };
+
+      rec.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) finalText += t;
+          else interim += t;
+        }
+
+        const display = (interim || finalText || '').trim();
+        if (display) textInput.value = display;
+
+        if (state.voiceMode === 'wake') {
+          const probe = (finalText || interim || '').trim();
+          if (!probe) return;
+
+          if (!state.wakeActive) {
+            const found = extractWakeCommand(probe);
+            if (found) {
+              const now = Date.now();
+              if (now - state.lastWakeTs < 1500) return;
+              state.lastWakeTs = now;
+
+              // Si el usuario ya completó el comando en la misma frase
+              // ("ok jarvis, cuál es la presión"), lo procesamos de una.
+              if (found.command.length >= 2) {
+                listenHint.textContent = `Detectado · Enviando "${found.command}"`;
+                runWakeCommand(found.command);
+                finalText = '';
+                textInput.value = '';
+                return;
+              }
+
+              // Solo wake → abrir ventana de captura
+              armWakeWindow();
+              finalText = '';
+              textInput.value = '';
+              return;
+            }
+          } else {
+            // Estamos dentro de la ventana de captura.
+            state.wakeBuffer = probe;
+            // Si llega un resultado final y tenemos texto, enviamos.
+            if (finalText && finalText.trim().length >= 2) {
+              const cmd = (state.wakeBuffer || '').trim();
+              if (cmd.length >= 2) {
+                listenHint.textContent = `Procesando: "${cmd}"`;
+                runWakeCommand(cmd);
+              }
+              finalText = '';
+              state.wakeBuffer = '';
+              // Volver a estado pasivo de wake (escuchando otra vez).
+              state.wakeActive = false;
+              if (state.wakeTimer) clearTimeout(state.wakeTimer);
+              state.wakeTimer = setTimeout(() => {
+                setWakeVisual('passive');
+                listenHint.textContent = '🎙️ Wake word activo. Decí "OK Jarvis".';
+              }, 1500);
+            }
+          }
+        }
+      };
+
+      rec.onerror = (e) => {
+        console.warn('STT error', e.error);
+        // 'no-speech' y 'aborted' son normales en modo wake continuo;
+        // el navegador los dispara en pausas. No spamear al usuario.
+        if (state.voiceMode === 'wake' &&
+            (e.error === 'no-speech' || e.error === 'aborted')) {
+          return;
+        }
+        // 'not-allowed' significa que el usuario negó el permiso del mic.
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          appendLog('sistema', '⚠️ Permiso del micrófono denegado. Autorízalo en el candado del navegador.');
+          state.voiceMode = 'off';
+          const wt = $('wake-toggle');
+          if (wt) {
+            wt.classList.remove('on');
+            wt.textContent = 'WAKE · OFF';
+          }
+        }
+        listenHint.textContent = `Error: ${e.error}.`;
+        setVoiceState('idle');
+      };
+
+      rec.onend = () => {
+        state.isListening = false;
+
+        // En wake: NO tocar visual, solo reintentar.
+        if (state.voiceMode === 'wake') {
+          // Aunque Chrome haya cerrado la sesión, mantenemos el visual
+          // "wake pasivo" — no queremos que el botón parpadee.
+          setTimeout(() => {
+            if (state.voiceMode === 'wake' && state.recognition) {
+              try {
+                state.recognition.start();
+              } catch (e) {
+                console.warn('Wake restart failed:', e);
+              }
+            }
+          }, 400);
+          return;
+        }
+
+        // Push-to-talk: cerrar visual, procesar frase.
+        micButton.classList.remove('active');
+        setMicPill('off');
+        setVoiceState('idle');
+        const phrase = (finalText || textInput.value || '').trim();
+        if (phrase) {
+          listenHint.textContent = 'Procesando consulta…';
+          sendQuery(phrase);
+        } else {
+          listenHint.textContent = 'No se detectó voz. Inténtalo de nuevo.';
+        }
+      };
+
+      return rec;
+    }
+
+    /* Procesa el comando tras un wake word: lo envía a la IA y
+       reproduce la respuesta por voz (TTS). */
+    function runWakeCommand(cmd) {
+      const cleaned = (cmd || '')
+        .replace(/^\s*[,.\s]+/, '')
+        .trim();
+      if (!cleaned) return;
+      // Para que el prefijo visual del wake word no contamine el log.
+      const logCmd = cleaned.length > 140 ? cleaned.slice(0, 140) + '…' : cleaned;
+      appendLog('user', `[por voz] ${logCmd}`);
+      sendQuery(cleaned);
+    }
+
+    /* -----  Botón del mic (push-to-talk)  ----- */
+    micButton.addEventListener('click', () => {
+      // Si el wake está activo, el botón sirve como "captura manual": abre
+      // una ventana de wake internal sin interrumpir el listener continuo.
+      if (state.voiceMode === 'wake') {
+        if (state.wakeActive) {
+          // Si ya estaba en captura, ciérrala para volver al modo pasivo.
+          state.wakeActive = false;
+          state.wakeBuffer = '';
+          if (state.wakeTimer) clearTimeout(state.wakeTimer);
+          setWakeVisual('passive');
+          listenHint.textContent = '🎙️ Wake word activo. Decí "OK Jarvis".';
+        } else {
+          armWakeWindow();
+        }
+        return;
+      }
+
+      // Modo push-to-talk clásico
+      if (!state.recognition) state.recognition = initSpeechRecognition();
+      if (!state.recognition) return;
+
+      if (state.isListening) {
+        try { state.recognition.stop(); } catch {}
+      } else {
+        try { state.recognition.start(); } catch (e) {
+          console.warn('No se pudo iniciar reconocimiento:', e);
+        }
+      }
+    });
+
+    /* -----  Toggle del wake word  ----- */
+    function setWakeMode(on) {
+      const toggle = $('wake-toggle');
+      toggle.classList.toggle('on', on);
+      toggle.textContent = on ? 'WAKE · ON' : 'WAKE · OFF';
+
+      // Si vamos a wake, primero paramos cualquier sesión en curso y
+      // descartamos el recognition anterior (la propiedad `continuous`
+      // sólo aplica al instanciar, así que hay que recrearlo).
+      if (on) {
+        if (state.recognition) {
+          try { state.recognition.stop(); } catch {}
+        }
+        state.voiceMode = 'wake';
+        state.recognition = initSpeechRecognition();   // recrea con continuous:true
+        if (!state.recognition) {
+          appendLog('sistema', 'Tu navegador no soporta reconocimiento de voz (wake no disponible).');
+          setWakeMode(false);
+          return;
+        }
+        try {
+          state.recognition.start();
+          // El visual "wake pasivo" se aplica en onstart, no aquí, para
+          // garantizar coherencia con el estado real del micro.
+        } catch (e) {
+          appendLog('sistema', `⚠️ No se pudo iniciar wake: ${e?.message || e}. ` +
+                               `Comprueba que el navegador tiene permiso de micrófono.`);
+          console.warn('Wake start failed:', e);
+          // Mantenemos el toggle en ON igual: el usuario puede reintentar
+          // más tarde. NO revertir silenciosamente.
+        }
+        appendLog('sistema', '🎙️ Wake word "OK Jarvis" activado. El micro escucha en segundo plano.');
+      } else {
+        state.voiceMode = 'off';
+        state.wakeActive = false;
+        state.wakeBuffer = '';
+        if (state.wakeTimer) {
+          clearTimeout(state.wakeTimer);
+          state.wakeTimer = null;
+        }
+        if (state.recognition) {
+          try { state.recognition.stop(); } catch {}
+        }
+        // Restauramos el visual a idle.
+        if (voiceStage) voiceStage.classList.remove('is-wake', 'is-wake-active');
+        listenHint.textContent = 'Pulsa el botón y formula tu pregunta en voz alta.';
+        micButton.classList.remove('active');
+        setMicPill('off');
+        appendLog('sistema', '🔇 Wake word desactivado. Usa el botón del micro para hablar.');
+      }
+    }
+
+    const wakeToggle = $('wake-toggle');
+    if (wakeToggle) {
+      wakeToggle.addEventListener('click', () => {
+        const onNow = wakeToggle.classList.contains('on');
+        setWakeMode(!onNow);
+      });
+    }
+
+    /* Red de seguridad: si Chrome mata la escucha continua por timeout,
+       este watchdog verifica cada 8s si el micro sigue realmente activo.
+       Si NO lo está, lo reinicia. Sin esto, después de ~1 min en silencio
+       el wake puede quedar muerto. */
+    setInterval(() => {
+      if (state.voiceMode !== 'wake') return;
+      if (state.wakeActive) return;       // no interrumpir una captura en curso
+      if (!state.recognition) return;
+      if (state.isListening) return;       // ya está escuchando
+      try {
+        state.recognition.start();
+        console.debug('Wake watchdog: restart OK');
+      } catch (e) {
+        // start() lanza InvalidStateError si ya hay uno activo. Silenciar.
+        console.debug('Wake watchdog start:', e?.message || e);
+      }
+    }, 8000);
+
+    // ---------------------------------------------------------- //
+    //  Web Speech API · TTS                                     //
+    // ---------------------------------------------------------- //
+    function pickSpanishVoice() {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return null;
+      return (
+        voices.find(v => /es-ES/i.test(v.lang)) ||
+        voices.find(v => /es-/i.test(v.lang)) ||
+        voices.find(v => /spanish/i.test(v.name)) ||
+        voices[0]
+      );
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        state.voice = pickSpanishVoice();
+      };
+      state.voice = pickSpanishVoice();
+    }
+
+    function speak(text, { priority = false } = {}) {
+      if (!state.ttsEnabled || !('speechSynthesis' in window)) return;
+      // Cancelar lo anterior salvo que sea prioritario
+      if (!priority) window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = 'es-ES';
+      utt.rate = 1.05;
+      utt.pitch = 1.0;
+      if (state.voice) utt.voice = state.voice;
+
+      // Reflejar el estado de "hablando" en el visualizador.
+      utt.onstart = () => setVoiceState('speaking');
+      utt.onend   = () => setVoiceState('idle');
+      utt.onerror = () => setVoiceState('idle');
+
+      window.speechSynthesis.speak(utt);
+    }
+
+    ttsToggle.addEventListener('click', () => {
+      state.ttsEnabled = !state.ttsEnabled;
+      ttsToggle.classList.toggle('on', state.ttsEnabled);
+      ttsToggle.textContent = state.ttsEnabled ? 'TTS · ON' : 'TTS · OFF';
+      if (!state.ttsEnabled) {
+        window.speechSynthesis.cancel();
+        setVoiceState('idle');
+      }
+    });
+
+    // ---------------------------------------------------------- //
+    //  REST: /api/voice-query                                   //
+    // ---------------------------------------------------------- //
+    async function sendQuery(query) {
+      if (!query) return;
+      appendLog('user', query);
+      textInput.value = '';
+      listenHint.textContent = 'Pulsa el botón y formula tu pregunta en voz alta.';
+
+      try {
+        const res = await fetch('/api/voice-query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          appendLog('sistema', `Error HTTP ${res.status}: ${errText}`);
+          return;
+        }
+        const data = await res.json();
+        appendLog('ia', data.respuesta || '(sin respuesta)');
+        if (data.datos && Object.keys(data.datos).length) {
+          console.debug('Datos IA:', data.datos);
+        }
+        if (state.ttsEnabled) speak(data.respuesta);
+      } catch (err) {
+        console.error(err);
+        appendLog('sistema', `Error de red: ${err.message}`);
+      }
+    }
+
+    sendBtn.addEventListener('click', () => {
+      const v = textInput.value.trim();
+      if (v) sendQuery(v);
+    });
+    textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const v = textInput.value.trim();
+        if (v) sendQuery(v);
+      }
+    });
+
+    // ---------------------------------------------------------- //
+    //  Carga inicial: PLCs                                       //
+    // ---------------------------------------------------------- //
+    async function loadPLCs() {
+      try {
+        const res = await fetch('/api/plcs');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderPLCs(data.plcs || []);
+        appendLog('sistema', `Cargados ${data.plcs?.length || 0} PLC(s).`);
+      } catch (e) {
+        appendLog('sistema', `No se pudo cargar /api/plcs: ${e.message}`);
+      }
+    }
+
+    async function loadWhoami() {
+      // Llama /api/_whoami para detectar IPs de la interfaz y mostrar pistas
+      // si el server está en WSL o en otro host distinto.
+      try {
+        const res = await fetch('/api/_whoami', { cache: 'no-store' });
+        if (!res.ok) return;
+        const info = await res.json();
+        if (info.en_wsl && info.urls_sugeridas?.length) {
+          appendLog(
+            'sistema',
+            `WSL detectado. Si la UI no responde, prueba: ${info.urls_sugeridas.join('  |  ')}`,
+          );
+        }
+      } catch (_) { /* no-op */ }
+    }
+
+    function renderPLCs(plcs) {
+      if (!plcs.length) {
+        plcList.innerHTML = '<div class="plc-card"><h3>Sin PLCs</h3><div class="meta">No hay PLCs configurados.</div></div>';
+        return;
+      }
+      plcList.innerHTML = plcs.map(p => `
+        <div class="plc-card">
+          <h3>${p.plc_id}</h3>
+          <div class="meta"><span>${p.ip}:${p.port}</span> · ${p.nombre || ''}</div>
+          <div class="meta" style="margin-top:6px;">${p.descripcion || ''}</div>
+        </div>
+      `).join('');
+    }
+
+    // ---------------------------------------------------------- //
+    //  Health tick                                              //
+    // ---------------------------------------------------------- //
+    async function healthTick() {
+      try {
+        const res = await fetch('/api/health');
+        if (!res.ok) throw new Error('HTTP');
+        const h = await res.json();
+        if (h.status === 'ok') {
+          const allOk = h.plcs_conectados === h.plcs_totales;
+          connPill.classList.remove('off', 'warn', 'crit');
+          connPill.classList.add(allOk ? '' : 'warn');
+          connText.textContent = `SISTEMA · ${h.plcs_conectados}/${h.plcs_totales} PLCs`;
+          if (h.ws_clientes > 0) {
+            wsPill.classList.remove('off');
+            wsText.textContent = `WS · ${h.ws_clientes}`;
+          }
+        }
+      } catch (e) {
+        connPill.classList.add('off');
+        connPill.classList.remove('warn', 'crit');
+        connText.textContent = 'SISTEMA · OFFLINE';
+      }
+      statusTime.textContent = nowTs();
+    }
+
+    // ---------------------------------------------------------- //
+    //  Boot                                                     //
+    // ---------------------------------------------------------- //
+    window.addEventListener('load', () => {
+      setInterval(healthTick, 5000);
+      healthTick();
+      loadPLCs();
+      loadWhoami();
+      connectWS();
+
+      // Saludo de bienvenida por voz (opcional, sólo la primera vez)
+      setTimeout(() => {
+        if (state.ttsEnabled) {
+          speak('Jarvis Industrial en línea. Pulsa el botón central para hablar conmigo.');
+        }
+      }, 1200);
+
+      appendLog('sistema', 'Interfaz cargada. Listo para operar.');
+      setVoiceState('idle');
+    });
+  </script>
+</body>
+</html>

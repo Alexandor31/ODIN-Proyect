@@ -1,0 +1,164 @@
+{
+  "plcs": [
+    {
+      "plc_id": "PLC_LINEA_01",
+      "nombre": "Línea de Producción 1",
+      "ip": "192.168.1.121",
+      "port": 502,
+      "unit_id": 1,
+      "descripcion": "PLC principal de la línea de ensamblaje",
+      "registros": {
+        "holding_registers": [
+          {
+            "nombre": "temperatura_motor",
+            "direccion": 100,
+            "tipo": "float32",
+            "unidad": "°C",
+            "descripcion": "Temperatura actual del motor principal",
+            "rango_min": 0,
+            "rango_max": 150
+          },
+          {
+            "nombre": "presion_sistema",
+            "direccion": 102,
+            "tipo": "float32",
+            "unidad": "bar",
+            "descripcion": "Presión del sistema hidráulico",
+            "rango_min": 0,
+            "rango_max": 10
+          },
+          {
+            "nombre": "velocidad_linea",
+            "direccion": 104,
+            "tipo": "uint16",
+            "unidad": "rpm",
+            "descripcion": "Velocidad de la línea en revoluciones por minuto",
+            "rango_min": 0,
+            "rango_max": 3000
+          },
+          {
+            "nombre": "contador_produccion",
+            "direccion": 105,
+            "tipo": "uint32",
+            "unidad": "unidades",
+            "descripcion": "Contador total de piezas producidas en el turno"
+          },
+          { 
+            "nombre": "setpoint_temperatura",
+            "direccion": 110,
+            "tipo": "uint16",
+            "unidad": "°C",
+            "descripcion": "Setpoint de temperatura deseado"
+          }
+        ],
+        "coils": [
+          {
+            "nombre": "motor_principal",
+            "direccion": 0,
+            "descripcion": "Estado del motor principal"
+          },
+          {
+            "nombre": "bomba_hidraulica",
+            "direccion": 1,
+            "descripcion": "Estado de la bomba hidráulica"
+          },
+          {
+            "nombre": "alarma_temperatura",
+            "direccion": 10,
+            "descripcion": "Alarma por temperatura crítica del motor"
+          },
+          {
+            "nombre": "alarma_presion",
+            "direccion": 11,
+            "descripcion": "Alarma por presión fuera de rango"
+          },
+          {
+            "nombre": "alarma_emergencia",
+            "direccion": 12,
+            "descripcion": "Paro de emergencia activo"
+          },
+          {
+            "nombre": "luz_fin_linea",
+            "direccion": 20,
+            "descripcion": "Indicador luminoso de fin de línea"
+          }
+        ]
+      },
+      "alarmas": [
+        {
+          "nombre": "alarma_temperatura",
+          "coil": 10,
+          "mensaje": "¡ALERTA! Temperatura del motor fuera de rango seguro",
+          "severidad": "alta"
+        },
+        {
+          "nombre": "alarma_presion",
+          "coil": 11,
+          "mensaje": "¡ALERTA! Presión del sistema hidráulico crítica",
+          "severidad": "alta"
+        },
+        {
+          "nombre": "alarma_emergencia",
+          "coil": 12,
+          "mensaje": "¡EMERGENCIA! Paro de emergencia activado",
+          "severidad": "critica"
+        }
+      ]
+    },
+    {
+      "plc_id": "PLC_LINEA_02",
+      "nombre": "Línea de Producción 2",
+      "ip": "192.168.1.121",
+      "port": 502,
+      "unit_id": 1,
+      "descripcion": "PLC secundario, línea de empaquetado",
+      "registros": {
+        "holding_registers": [
+          {
+            "nombre": "nivel_tanque",
+            "direccion": 200,
+            "tipo": "uint16",
+            "unidad": "%",
+            "descripcion": "Nivel del tanque de líquido en porcentaje",
+            "rango_min": 0,
+            "rango_max": 100
+          },
+          {
+            "nombre": "flujo_embalaje",
+            "direccion": 201,
+            "tipo": "uint16",
+            "unidad": "u/min",
+            "descripcion": "Tasa de empaquetado"
+          }
+        ],
+        "coils": [
+          {
+            "nombre": "banda_transportadora",
+            "direccion": 0,
+            "descripcion": "Estado de la banda transportadora"
+          },
+          {
+            "nombre": "alarma_nivel_bajo",
+            "direccion": 10,
+            "descripcion": "Alarma por nivel bajo del tanque"
+          }
+        ]
+      },
+      "alarmas": [
+        {
+          "nombre": "alarma_nivel_bajo",
+          "coil": 10,
+          "mensaje": "¡ATENCIÓN! Nivel del tanque por debajo del mínimo",
+          "severidad": "media"
+        }
+      ]
+    }
+  ],
+  "configuracion_global": {
+    "poll_interval_ms": 1000,
+    "reconnect_delay_s": 5,
+    "ia_provider": "local",
+    "ia_model": "jarvis-engine-v1",
+    "voz_default": "es-ES"
+  }
+}
