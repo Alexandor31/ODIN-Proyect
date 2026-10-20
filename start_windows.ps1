@@ -1,6 +1,6 @@
 # ============================================================================
 # start_windows.ps1
-# Arranca Jarvis Industrial y configura automáticamente el port-forward
+# Arranca DANTE Industrial y configura automáticamente el port-forward
 # entre Windows y WSL para que http://localhost:8000 funcione en tu navegador.
 #
 # Uso (PowerShell, UNA vez si da error de ejecución):
@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 $port = 8000
 
 Write-Host ""
-Write-Host "Jarvis Industrial · Arranque (Windows + WSL)" -ForegroundColor Cyan
+Write-Host "DANTE Industrial · Arranque (Windows + WSL)" -ForegroundColor Cyan
 Write-Host "=================================================" -ForegroundColor Cyan
 
 # 1) Resolver la distro WSL predeterminada y su IP
@@ -45,7 +45,7 @@ if ($wsl_ip) {
     netsh interface portproxy add v4tov4 listenport=$port listenaddress=0.0.0.0 connectport=$port connectaddress=$wsl_ip | Out-Null
 
     # 3) Abrir el firewall si está cerrado
-    $ruleName = "Jarvis Industrial WSL $port"
+    $ruleName = "DANTE Industrial WSL $port"
     netsh advfirewall firewall delete rule name=$ruleName 2>$null
     netsh advfirewall firewall add rule name=$ruleName dir=in action=allow protocol=TCP localport=$port | Out-Null
     Write-Host "      Regla de firewall creada." -ForegroundColor Green

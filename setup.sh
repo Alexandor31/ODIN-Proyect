@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------
-# setup.sh — Bootstrap para Jarvis Industrial
+# setup.sh — Bootstrap para DANTE Industrial
 # Resuelve el error PEP 668 (externally-managed-environment)
 # creando un entorno virtual e instalando las dependencias.
 # ---------------------------------------------------------
@@ -12,7 +12,7 @@ cd "$PROJECT_DIR"
 VENV_DIR="${PROJECT_DIR}/.venv"
 PYTHON_BIN="${PYTHON:-python3}"
 
-echo "==> Jarvis Industrial · Setup"
+echo "==> DANTE Industrial · Setup"
 echo "    Proyecto : $PROJECT_DIR"
 echo "    Python   : $($PYTHON_BIN --version 2>&1)"
 echo "    Venv     : $VENV_DIR"

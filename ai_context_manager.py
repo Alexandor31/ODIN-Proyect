@@ -13,7 +13,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
-logger = logging.getLogger("JarvisIndustrial.AIContextManager")
+logger = logging.getLogger("DANTEIndustrial.AIContextManager")
 
 
 class AIContextManager:
@@ -108,6 +108,50 @@ class AIContextManager:
             for c in plc.get("registros", {}).get("coils", []):
                 if c["nombre"].lower() == nombre_l:
                     return {"plc_id": plc["plc_id"], "kind": "coil", **c}
+        return None
+
+    def find_writable_by_name(self, variable_name: str) -> Optional[Dict[str, Any]]:
+        """
+        Busca una variable ESCRIBIBLE (setpoint o comando) por nombre.
+        Retorna dict con 'plc_id', 'kind' ('holding_register'|'coil') y resto de campos.
+        """
+        nombre_l = variable_name.lower()
+        for plc in self.plcs:
+            esc = plc.get("registros", {}).get("escribibles", {})
+            for hr in esc.get("holding_registers", []):
+                if hr["nombre"].lower() == nombre_l:
+                    return {"plc_id": plc["plc_id"], "kind": "holding_register", **hr}
+            for c in esc.get("coils", []):
+                if c["nombre"].lower() == nombre_l:
+                    return {"plc_id": plc["plc_id"], "kind": "coil", **c}
+        return None
+
+    def list_writable_variables(self) -> List[Dict[str, Any]]:
+        """Lista todas las variables escribibles del sistema, con su PLC."""
+        out: List[Dict[str, Any]] = []
+        for plc in self.plcs:
+            esc = plc.get("registros", {}).get("escribibles", {})
+            for hr in esc.get("holding_registers", []):
+                out.append({"plc_id": plc["plc_id"], "kind": "holding_register", **hr})
+            for c in esc.get("coils", []):
+                out.append({"plc_id": plc["plc_id"], "kind": "coil", **c})
+        return out
+
+    def validate_writable_value(self, variable_cfg: Dict[str, Any], value: Any) -> Optional[str]:
+        """Valida que `value` sea aceptable para `variable_cfg`. Devuelve mensaje de error o None."""
+        rmin = variable_cfg.get("rango_min")
+        rmax = variable_cfg.get("rango_max")
+        if rmin is not None and rmax is not None:
+            try:
+                v_num = float(value)
+                if v_num < rmin or v_num > rmax:
+                    return f"Valor fuera de rango [{rmin}..{rmax}]"
+            except (TypeError, ValueError):
+                return "El valor debe ser numérico"
+        kind = variable_cfg.get("kind")
+        if kind == "coil":
+            if not isinstance(value, bool):
+                return "Para un coil/ON-OFF el valor debe ser booleano (true/false)"
         return None
 
     def get_alarms_for_plc(self, plc_id: str) -> List[Dict[str, Any]]:

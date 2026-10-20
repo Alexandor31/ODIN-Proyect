@@ -1,7 +1,7 @@
 """
 main.py
 =======
-Punto de entrada de "Jarvis Industrial".
+Punto de entrada de "DANTE Industrial".
 
 Levanta el servidor FastAPI con:
   * POST /api/voice-query       -> consulta por voz
@@ -16,6 +16,7 @@ Inicializa todas las clases del sistema y arranca el worker en background.
 import os
 import platform
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 from typing import Dict, Any
 
@@ -37,10 +38,18 @@ from webhook_bridge import WebhookBridge
 from websocket_manager import WebSocketManager
 from industrial_agent_service import IndustrialAgentService
 
+
+def env(name: str, legacy: str, default: str) -> str:
+    """Lee una variable de entorno DANTE_* y, si no existe, la ODIN_*
+    equivalente. Así los despliegues anteriores siguen funcionando
+    tras el renombrado."""
+    return os.getenv(name) or os.getenv(legacy) or default
+
+
 # ---------------------------------------------------------------------- #
 #  Configuración de logging
 # ---------------------------------------------------------------------- #
-LOG_LEVEL = os.getenv("JARVIS_LOG_LEVEL", "INFO").upper()
+LOG_LEVEL = env("DANTE_LOG_LEVEL", "ODIN_LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
     level=LOG_LEVEL,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -49,7 +58,7 @@ logging.basicConfig(
 # mientras el PLC no responde. Solo mostraremos CRITICAL y superior.
 logging.getLogger("pymodbus").setLevel(logging.CRITICAL)
 logging.getLogger("pymodbus.logging").setLevel(logging.CRITICAL)
-logger = logging.getLogger("JarvisIndustrial.Main")
+logger = logging.getLogger("DANTEIndustrial.Main")
 
 # ---------------------------------------------------------------------- #
 #  Modelos Pydantic (validación de entrada/salida)
@@ -97,14 +106,14 @@ async def lifespan(app: FastAPI):
     banner = (
         "\n"
         "+=================================================================+\n"
-        "|                  J A R V I S   I N D U S T R I A L            |\n"
+        "|                     O D I N   I N D U S T R I A L              |\n"
         "+=================================================================+\n"
     )
     print(banner)
-    logger.info("Iniciando Jarvis Industrial…")
+    logger.info("Iniciando DANTE Industrial…")
 
     # 1) Contexto (configuración)
-    config_path = os.getenv("JARVIS_CONFIG", "config_plcs.json")
+    config_path = env("DANTE_CONFIG", "ODIN_CONFIG", "config_plcs.json")
     context = AIContextManager(config_path)
 
     # 2) Gestor de WebSockets
@@ -137,9 +146,11 @@ async def lifespan(app: FastAPI):
 
     # 6) Aviso claro de la URL (imprime al stdout SIN pasar por el logger
     #    para evitar competir con uvicorn).
-    host = os.getenv("JARVIS_HOST", "0.0.0.0")
-    port = int(os.getenv("JARVIS_PORT", "8000"))
-    url = f"http://localhost:{port}"
+    host = env("DANTE_HOST", "ODIN_HOST", "0.0.0.0")
+    port = int(env("DANTE_PORT", "ODIN_PORT", "8000"))
+    # La consola se sirve en local, sin cifrar.
+    _scheme = "http"
+    url = f"{_scheme}://localhost:{port}"
 
     # Intentar detectar IPs locales para dar pistas cuando el server
     # corre dentro de WSL o un contenedor.
@@ -166,7 +177,7 @@ async def lifespan(app: FastAPI):
     if ips:
         ip_hint = "\n  Si abres la UI desde otra máquina o desde Windows\n  y el server corre en WSL/Linux, prueba con:"
         for ip in sorted(set(ips)):
-            ip_hint += f"\n      http://{ip}:{port}"
+            ip_hint += f"\n      {_scheme}://{ip}:{port}"
 
     print(
         f"\n  Consola web disponible en:\n"
@@ -185,7 +196,7 @@ async def lifespan(app: FastAPI):
     finally:
         # Apagado robusto: capturar CancelledError (proveniente de Ctrl+C)
         try:
-            logger.info("Apagando Jarvis Industrial…")
+            logger.info("Apagando DANTE Industrial…")
             await bridge.stop()
         except (asyncio.CancelledError, Exception) as e:
             logger.debug(f"Bridge stop con excepción: {e}")
@@ -201,16 +212,29 @@ async def lifespan(app: FastAPI):
 #  Aplicación FastAPI
 # ---------------------------------------------------------------------- #
 app = FastAPI(
-    title="Jarvis Industrial",
+    title="DANTE Industrial",
     description="Puente web inteligente PLC ↔ Asistente IA para voz y alarmas",
     version="1.0.0",
     lifespan=lifespan,
 )
 
-# CORS abierto para entornos de desarrollo. En producción, restringir.
+# ---------------------------------------------------------------------- #
+#  CORS                                                                #
+# ---------------------------------------------------------------------- #
+# Antes era allow_origins=["*"] con allow_credentials=True, combinación
+# que la spec de CORS prohíbe y que el navegador ignora cuando hay
+# credenciales. La consola se sirve desde el propio servidor, así que
+# el único origen legítimo es el propio servidor: cualquier otro se
+# rechaza en el navegador antes de llegar a la red de planta.
+_cors_origins = [
+    o.strip()
+    for o in env("DANTE_CORS_ORIGINS", "ODIN_CORS_ORIGINS", "").split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,   # vacío = misma origen únicamente
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -272,7 +296,7 @@ async def health():
         plcs_detalle=detalle,
         ws_clientes=app.state.ws_manager.client_count,
         ia_provider=app.state.context.get_global_config().get("ia_provider", "local"),
-        puerto=int(os.getenv("JARVIS_PORT", "8000")),
+        puerto=int(env("DANTE_PORT", "ODIN_PORT", "8000")),
         nota=nota,
     )
 
@@ -293,8 +317,8 @@ async def whoami():
     info = {
         "hostname": socket.gethostname(),
         "ips": [],
-        "host_bind": os.getenv("JARVIS_HOST", "0.0.0.0"),
-        "port": int(os.getenv("JARVIS_PORT", "8000")),
+        "host_bind": env("DANTE_HOST", "ODIN_HOST", "0.0.0.0"),
+        "port": int(env("DANTE_PORT", "ODIN_PORT", "8000")),
         "urls_sugeridas": [],
     }
     # hostname
@@ -357,6 +381,12 @@ async def webhook_receiver(payload: WebhookPayload = Body(...)):
     return {"ok": True, "mensaje": "evento encolado para difusión"}
 
 
+@app.get("/api/writable", tags=["control"])
+async def list_writable():
+    """Lista todas las variables escribibles configuradas."""
+    return {"writables": app.state.context.list_writable_variables()}
+
+
 # ---------------------------------------------------------------------- #
 #  WebSocket
 # ---------------------------------------------------------------------- #
@@ -400,11 +430,11 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
 
-    host = os.getenv("JARVIS_HOST", "0.0.0.0")
-    port = int(os.getenv("JARVIS_PORT", "8000"))
+    host = env("DANTE_HOST", "ODIN_HOST", "0.0.0.0")
+    port = int(env("DANTE_PORT", "ODIN_PORT", "8000"))
 
     # access_log=False evita inundar la consola con una línea por cada GET.
-    # Los logs importantes se ven por el logger "JarvisIndustrial.*" y el
+    # Los logs importantes se ven por el logger "DANTEIndustrial.*" y el
     # banner de arranque que imprime main.py.
     try:
         uvicorn.run(
@@ -417,6 +447,6 @@ if __name__ == "__main__":
         )
     except KeyboardInterrupt:
         # Salida limpia al pulsar Ctrl+C
-        print("\nJarvis Industrial detenido por el usuario.")
+        print("\nDANTE Industrial detenido por el usuario.")
     except SystemExit:
         pass

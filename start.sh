@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================================
 # start.sh
-# Arranca Jarvis Industrial dentro de WSL. Úsalo desde la propia WSL.
+# Arranca DANTE Industrial dentro de WSL. Úsalo desde la propia WSL.
 # ============================================================================
 set -e
 cd "$(dirname "$0")"

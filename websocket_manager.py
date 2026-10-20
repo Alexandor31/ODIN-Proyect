@@ -14,7 +14,7 @@ from typing import Set, Dict, Any
 
 from fastapi import WebSocket
 
-logger = logging.getLogger("JarvisIndustrial.WebSocketManager")
+logger = logging.getLogger("DANTEIndustrial.WebSocketManager")
 
 
 class WebSocketManager:
@@ -45,7 +45,7 @@ class WebSocketManager:
             {
                 "tipo": "sistema",
                 "nivel": "info",
-                "mensaje": "Conectado a Jarvis Industrial. Esperando eventos...",
+                "mensaje": "Conectado a DANTE Industrial. Esperando eventos...",
             },
         )
 

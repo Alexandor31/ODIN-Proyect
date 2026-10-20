@@ -21,7 +21,11 @@ try:
 except Exception:  # pragma: no cover
     _PM_VERSION = "0.0.0"
 
-logger = logging.getLogger("JarvisIndustrial.PLCManager")
+logger = logging.getLogger("DANTEIndustrial.PLCManager")
+
+# Tiempo que se espera tras un fallo de conexión antes de reintentarlo.
+# Evita que cada lectura de una consulta se lleve timeout × retries.
+_CONNECT_COOLDOWN_S = 8.0
 
 # ------------------------------------------------------------------ #
 #  Compatibilidad pymodbus
@@ -80,6 +84,7 @@ class PLCManager:
 
         self.client: Optional[ModbusTcpClient] = None
         self._connected: bool = False
+        self._connect_fail_ts: float = 0.0
 
         # Caché liviano del último estado (utilizado por el worker para
         # detectar flancos de subida en alarmas).
@@ -93,7 +98,20 @@ class PLCManager:
     #  Conexión / desconexión
     # ------------------------------------------------------------------ #
     def connect(self) -> bool:
-        """Establece (o re-establece) la conexión Modbus TCP."""
+        """Establece (o re-establece) la conexión Modbus TCP.
+
+        Si el PLC no responde, no se reintenta en cada lectura: un
+        connect() fallido cuesta timeout × retries (3 s × 2), y una
+        consulta que lee 4 variables tardaba más de 12 s en responder.
+        Con el enfriamiento fallamos rápido y seguimos en modo
+        simulación hasta que venza.
+        """
+        # Enfriamiento: si acabamos de fallar, no reintentar todavía.
+        cooldown = getattr(self, "_connect_fail_ts", 0.0)
+        if cooldown and (_now_ts() - cooldown) < _CONNECT_COOLDOWN_S:
+            self._connected = False
+            return False
+
         try:
             if self.client is None:
                 self.client = ModbusTcpClient(
@@ -107,8 +125,10 @@ class PLCManager:
                 self._connected = self.client.connect()
 
             if self._connected:
+                self._connect_fail_ts = 0.0
                 logger.info(f"[{self.plc_id}] Conectado a {self.ip}:{self.port}")
             else:
+                self._connect_fail_ts = _now_ts()
                 # Rate-limit del warning: máximo uno cada N segundos
                 # para evitar spam en el log cuando el PLC está offline.
                 if not getattr(self, "_last_warn_ts", 0) or (
@@ -129,6 +149,7 @@ class PLCManager:
         except Exception as e:
             logger.error(f"[{self.plc_id}] Error al conectar: {e}")
             self._connected = False
+            self._connect_fail_ts = _now_ts()
             return False
 
     def disconnect(self) -> None:
@@ -174,8 +195,10 @@ class PLCManager:
             return v - 0x100000000 if v & 0x80000000 else v
 
         if tipo == "float32":
-            # 2 registros = 4 bytes = float IEEE-754
-            packed = struct.pack(">HH", registers[0], registers[1])
+            # 2 registros = 4 bytes = float IEEE-754.
+            # Swap de palabras: el PLC entrega la palabra BAJA primero
+            # (little-endian por palabra), por eso invertimos el orden.
+            packed = struct.pack(">HH", registers[1], registers[0])
             return struct.unpack(">f", packed)[0]
 
         # Tipo desconocido: devolver crudo
@@ -190,9 +213,10 @@ class PLCManager:
             v = int(value) & 0xFFFFFFFF
             return [(v >> 16) & 0xFFFF, v & 0xFFFF]
         if tipo == "float32":
+            # Enviamos con la palabra BAJA primero (PLC little-endian por palabra)
             packed = struct.pack(">f", float(value))
             hi, lo = struct.unpack(">HH", packed)
-            return [hi, lo]
+            return [lo, hi]
         return [int(value) & 0xFFFF]
 
     # ------------------------------------------------------------------ #
@@ -228,6 +252,70 @@ class PLCManager:
         except Exception as e:
             logger.error(f"[{self.plc_id}] Error inesperado HR: {e}")
             return None
+
+    def write_coil(self, coil_config: Dict[str, Any], value: bool) -> bool:
+        """Escribe un coil (booleano) en el PLC."""
+        if not self.is_connected() and not self.connect():
+            return False
+
+        try:
+            direccion = coil_config["direccion"]
+            rr = self.client.write_coil(
+                address=direccion,
+                value=bool(value),
+                **{_UNIT_KWARG: self.unit_id},
+            )
+            if rr.isError():
+                logger.error(
+                    f"[{self.plc_id}] Error escribiendo coil {coil_config['nombre']}: {rr}"
+                )
+                return False
+            logger.info(
+                f"[{self.plc_id}] Coil {coil_config['nombre']} escrito a {bool(value)}"
+            )
+            return True
+
+        except (ModbusException, ConnectionException) as e:
+            logger.error(f"[{self.plc_id}] ModbusException en write_coil: {e}")
+            self._connected = False
+            return False
+        except Exception as e:
+            logger.error(f"[{self.plc_id}] Error inesperado write_coil: {e}")
+            return False
+
+    def write_holding_register(self, reg_config: Dict[str, Any], value: Any) -> bool:
+        """Escribe un holding register (decodifica el valor según su tipo)."""
+        if not self.is_connected() and not self.connect():
+            return False
+
+        try:
+            direccion = reg_config["direccion"]
+            tipo = reg_config.get("tipo", "uint16")
+            registers = self._encode_value(value, tipo)
+            count = len(registers)
+
+            rr = self.client.write_registers(
+                address=direccion,
+                values=registers,
+                **{_UNIT_KWARG: self.unit_id},
+            )
+            if rr.isError():
+                logger.error(
+                    f"[{self.plc_id}] Error escribiendo HR {reg_config['nombre']}: {rr}"
+                )
+                return False
+            logger.info(
+                f"[{self.plc_id}] HR {reg_config['nombre']} escrito a {value} ({tipo})"
+            )
+            return True
+
+        except (ModbusException, ConnectionException) as e:
+            logger.error(f"[{self.plc_id}] ModbusException en write_HR: {e}")
+            self._connected = False
+            return False
+        except Exception as e:
+            logger.error(f"[{self.plc_id}] Error inesperado write_HR: {e}")
+            return False
 
     def read_coil(self, coil_config: Dict[str, Any]) -> Optional[bool]:
         """Lee un coil (booleano)."""

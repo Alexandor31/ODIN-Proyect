@@ -1,4 +1,4 @@
-# Jarvis Industrial - Dependencias
+# DANTE Industrial - Dependencias
 # ⚠️  Si tu sistema es Debian/Ubuntu reciente y ves
 #     "externally-managed-environment", usa `setup.sh` o `setup.bat`,
 #     que crea un entorno virtual (NO uses --break-system-packages).
@@ -21,4 +21,4 @@ python-dotenv>=1.0,<2.0
 # Proveedores de IA opcionales (descomentar el que necesites):
 # ---------------------------------------------------------------
 # openai>=1.0
-# anthropic>=0.20
+anthropic>=0.30   # Necesario para ia_provider=anthropic o ia_provider=seius (llm.seius.com.ec)

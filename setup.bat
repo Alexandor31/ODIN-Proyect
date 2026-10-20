@@ -1,6 +1,6 @@
 @echo off
 REM ----------------------------------------------------------------
-REM setup.bat - Bootstrap para Jarvis Industrial en Windows
+REM setup.bat - Bootstrap para DANTE Industrial en Windows
 REM Crea un entorno virtual (.venv) e instala las dependencias.
 REM ----------------------------------------------------------------
 setlocal
@@ -11,7 +11,7 @@ cd /d "%PROJECT_DIR%"
 set VENV_DIR=%PROJECT_DIR%.venv
 if not defined PYTHON set PYTHON=python
 
-echo ==^> Jarvis Industrial . Setup (Windows)
+echo ==^> DANTE Industrial . Setup (Windows)
 echo     Proyecto : %PROJECT_DIR%
 echo     Python   :
 %PYTHON% --version

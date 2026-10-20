@@ -19,7 +19,7 @@ from plc_manager import PLCManager
 from ai_context_manager import AIContextManager
 from websocket_manager import WebSocketManager
 
-logger = logging.getLogger("JarvisIndustrial.WebhookBridge")
+logger = logging.getLogger("DANTEIndustrial.WebhookBridge")
 
 
 class WebhookBridge:

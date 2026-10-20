@@ -1,5 +1,5 @@
 [project]
-name = "jarvis-industrial"
+name = "dante-industrial"
 version = "1.0.0"
 description = "Puente web inteligente PLC (Modbus TCP) + asistente IA por voz"
 requires-python = ">=3.10"
@@ -14,9 +14,9 @@ dependencies = [
 ]
 
 [project.scripts]
-jarvis = "main:app"
+dante = "main:app"
 
-[tool.jarvis]
+[tool.dante]
 # Recomienda explícitamente la entrada del proyecto para evitar
 # el clásico error "can't open file .../main.py" cuando se ejecuta
 # desde una carpeta superior.

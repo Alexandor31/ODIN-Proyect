@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%">
+  <!-- Reconstrucción de Logo Centrado Pixel-Perfect -->
+  <!-- Arco Exterior Verde -->
+  <path d="M 50.23 198.66 A 111 111 0 1 0 146.13 39.07" 
+        fill="none" 
+        stroke="#003378" 
+        stroke-width="21" 
+        stroke-linecap="round" />
+
+  <!-- Arco Interior Azul -->
+  <path d="M 219.86 132.58 A 72 72 0 1 0 108.70 208.98" 
+        fill="none" 
+        stroke="#008833" 
+        stroke-width="21" 
+        stroke-linecap="round" />
+
+  <!-- Círculo Verde Superior Izquierdo (Superpuesto en el arco interior) -->
+  <circle cx="97.34" 
+          cy="100.90" 
+          r="24" 
+          fill="#003378" />
+
+  <!-- Círculo Azul Inferior Derecho (Superpuesto en el arco exterior) -->
+  <circle cx="221.35" 
+          cy="235.03" 
+          r="24" 
+          fill="#008833" />
+      
+</svg>
